@@ -2,12 +2,16 @@ import { config } from "dotenv"
 import * as express from "express"
 import { Database } from "../database"
 import { Parser } from "../parser"
+import { Downloader } from "../downloader"
+import { Emitter } from "../emitter"
+import { Kue } from "../queue"
 
 export class App {
     private app: express.Application
     private parser: Parser
     private env: string
     private port: number
+    private kue: Kue
 
     public constructor() {
         this.init()
@@ -17,35 +21,18 @@ export class App {
     private async init(): Promise<void> {
         config()
 
+        Emitter.init()
+        Downloader.init()
         new Database()
 
         this.app = express()
-        this.parser = new Parser("https://refuge.tokyo/pc9801/")
+        this.kue = new Kue()
         this.env = process.env.NODE_ENV || "development"
         this.port = Number(process.env.NODE_PORT) || 3000
     }
 
     private async exec(): Promise<void> {
-        const mainGenres = await this.parser.getMainGenre()
-        const subGenres = await this.parser.getSubGenre()
-        const games = await this.parser.getGames()
-        const game = await this.parser.getGame()
-
-        console.log(mainGenres)
-        console.log(subGenres)
-        console.log(games)
-        console.log(game)
-
-        const data = await Database.get("games").findOneAndUpdate({
-            refuge_id: game.refuge_id
-        }, {
-            $setOnInsert: game
-        }, {
-            returnOriginal: false,
-            upsert: true
-        })
-
-        console.log(data)
+        await this.kue.mainGenre({ title: "Main Genre" })
     }
 
     public start(): any {

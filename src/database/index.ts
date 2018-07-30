@@ -1,5 +1,6 @@
 import { MongoClient, Db, Collection } from "mongodb"
 import { GameScheme } from "./schemes/game"
+import { Emitter } from "../emitter"
 
 let database: Db
 
@@ -17,7 +18,7 @@ export class Database {
         try {
             const connect = await MongoClient.connect(URL)
             database = connect.db(MONGO_DBNAME)
-            //Emitter.instance.emit("dbinit")
+            Emitter.instance.emit("dbinit")
             this.schemes()
         } catch (err) {
             console.error(err)
